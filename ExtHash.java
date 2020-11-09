@@ -171,98 +171,130 @@ public class  ExtHash<K,V> {
                 counter += bucketlist.get(i).keyset.size();
             }
         return counter;
-        }
-
-    public static void main(String[] args) throws FileNotFoundException, InterruptedException {
-        //this example is from anadiotis slides..
-        //when we have the dataset we can split it to as many threads we want
-        //we have to test the code a bit more
-        //overleaf (?)
-        /*
-        ExtHash<Integer, Integer> eh1 = new ExtHash<Integer, Integer>();
-
-        int[] x = new int[]{4, 1, 12, 32, 16, 5};
-        Thread t1 = new Thread(new MyThread("1", eh1, x, "Insert"));
-        int[] y = new int[]{21, 13, 10, 15, 7, 19};
-        Thread t2 = new Thread(new MyThread("2", eh1, y, "Insert"));
-        int[] z = new int[]{20};
-        Thread t3 = new Thread(new MyThread("3", eh1, z, "Insert"));
-
-        t1.start();
-        t2.start();
-        t3.start();
-
-        t1.join();
-        t2.join();
-        t3.join();
-
-       // eh1.remove(20);
-        System.out.println(eh1);
-        System.out.println(eh1.globaldepth);
-        System.out.println("yo " + eh1.getValue(20));
-
-        System.out.print(eh1.countElements());
-         */
-
-        ExtHash<String, String> eh2 = new ExtHash<String, String>();
+    }
+    
+    
+    public static void writeInsertPerformance(String filename) throws IOException, InterruptedException {
+    	ExtHash<String, String> eh2 = new ExtHash<String, String>();
         ArrayList<String> keys = new ArrayList<String>();
         ArrayList<String> values = new ArrayList<String>();
         Scanner reader = new Scanner(new File("911.csv"));
-        // Skip the 2 first lines
-        //reader.nextLine();
-        //reader.nextLine();
+        reader.nextLine();
         String sep = ",";
 
         while(reader.hasNextLine()) {
             String [] line = reader.nextLine().split(sep);
             keys.add(line[2]);
-            //ArrayList temp = new ArrayList(Arrays.asList(line));
-            //temp.remove(0);
             values.add(line[4]);
         }
+        
+        ArrayList<Long> times = new ArrayList<>();
+    	
+    	for(int i=5000;i<keys.size();i+=100000) {
+    		List<String> keysSub = keys.subList(0, i);
+    		List<String> valuesSub = values.subList(0, i);
+    		int size = keysSub.size();
+            
+    		
+            List<String> key1 = keysSub.subList(0,(int)size/3);
+            List<String> key2 = keysSub.subList((int)size/3,(int) 2*size/3);
+            List<String> key3 = keysSub.subList((int) 2*size/3,size);
 
-        int size = keys.size();
-        System.out.println("size=" + size);
-        List<String> key1 = keys.subList(0,(int)size/3);
-        List<String> key2 = keys.subList((int)size/3 + 1,(int) 2*size/3);
-        List<String> key3 = keys.subList((int) 2*size/3,(int) size);
+            List<String> value1 = valuesSub.subList(0,(int)size/3);
+            List<String> value2 = valuesSub.subList((int)size/3 + 1,(int) 2*size/3);
+            List<String> value3 = valuesSub.subList((int) 2*size/3,size);
 
-        List<String> value1 = values.subList(0,(int)size/3);
-        List<String> value2 = values.subList((int)size/3 + 1,(int) 2*size/3);
-        List<String> value3 = values.subList((int) 2*size/3,(int) size);
+            
+            MyThread m1 = new MyThread("1", eh2, key1, value1, "Insert");
+            Thread t1 = new Thread(m1);
+            Thread t2 = new Thread(new MyThread("2", eh2, key2, value2 ,"Insert"));
+            Thread t3 = new Thread(new MyThread("3", eh2, key3, value3 ,"Insert"));
+            
+            long start = System.nanoTime();
+            t1.start();
+            t2.start();
+            t3.start();
 
-        long start = System.currentTimeMillis();
-        MyThread m1 = new MyThread("1", eh2, key1, value1, "Insert");
-        Thread t1 = new Thread(m1);
-        Thread t2 = new Thread(new MyThread("2", eh2, key2, value2 ,"Insert"));
-        Thread t3 = new Thread(new MyThread("3", eh2, key3, value3 ,"Insert"));
-       // Thread t4 = new Thread(new MyThread("3", eh2, key4, value3 ,"Insert"));
-        t1.start();
-        t2.start();
-        t3.start();
+            t1.join();
+            t2.join();
+            t3.join();
+            long finish = System.nanoTime();
+            
+            times.add(finish - start);
+            
+            t1.interrupt();
+            t2.interrupt();
+            t3.interrupt();
+    	}
+    	
+    	
+    	PrintWriter pw=new PrintWriter(new FileWriter(filename));
+	    pw.println(times.toString());
+		pw.close();
+    }
+    
+    public static void writeAccessPerformance(String filename) throws InterruptedException, IOException {
+    	ExtHash<String, String> eh2 = new ExtHash<String, String>();
+        ArrayList<String> keys = new ArrayList<String>();
+        ArrayList<String> values = new ArrayList<String>();
+        Scanner reader = new Scanner(new File("911.csv"));
+        reader.nextLine();
+        String sep = ",";
 
-        t1.join();
-        t2.join();
-        t3.join();
-        long finish = System.currentTimeMillis();
-        long timeElapsed = finish - start;
-        System.out.println("Time=" + timeElapsed);
+        while(reader.hasNextLine()) {
+            String [] line = reader.nextLine().split(sep);
+            keys.add(line[2]);
+            values.add(line[4]);
+            eh2.put(line[2], line[4]);
+        }
+        
+        ArrayList<Long> times = new ArrayList<>();
+        
+        for(int i=5000;i<keys.size();i+=100000) {
+    		List<String> keysSub = keys.subList(0, i);
+    		List<String> valuesSub = values.subList(0, i);
+    		int size = keysSub.size();
+            
+    		
+            List<String> key1 = keysSub.subList(0,(int)size/3);
+            List<String> key2 = keysSub.subList((int)size/3,(int) 2*size/3);
+            List<String> key3 = keysSub.subList((int) 2*size/3,size);
+            
+            List<String> value1 = valuesSub.subList(0,(int)size/3);
+            List<String> value2 = valuesSub.subList((int)size/3 + 1,(int) 2*size/3);
+            List<String> value3 = valuesSub.subList((int) 2*size/3,size);
+            
+            MyThread m1 = new MyThread("1", eh2, key1, value1, "Search");
+            Thread t1 = new Thread(m1);
+            Thread t2 = new Thread(new MyThread("2", eh2, key2, value2 ,"Search"));
+            Thread t3 = new Thread(new MyThread("3", eh2, key3, value3 ,"Search"));
+            
+            long start = System.nanoTime();
+            t1.start();
+            t2.start();
+            t3.start();
 
-        List<Long> temp1 =  m1.getList();
-        temp1.forEach(x -> counter += x);
+            t1.join();
+            t2.join();
+            t3.join();
+            long finish = System.nanoTime();
+            
+            times.add(finish - start);
+            
+            t1.interrupt();
+            t2.interrupt();
+            t3.interrupt();
+    	}
+        
+        PrintWriter pw=new PrintWriter(new FileWriter(filename));
+	    pw.println(times.toString());
+		pw.close();
+    }
+    
+    public static void main(String[] args) throws InterruptedException, IOException {
 
-        List<Integer> integers = Arrays.asList(1, 2, 3, 4, 5);
-        LongSummaryStatistics sum = temp1.stream()
-                .collect(Collectors.summarizingLong(Long::longValue));
-
-        //eh2.remove("Toyota Corolla");
-        //System.out.println("yo" + eh2.getValue("Toyota Corolla"));
-
-        //System.out.println(eh2);
-        //System.out.println(eh2.getValue("\"Metadata for Digital Media: Introduction to the Special Issue\""));
-        //System.out.println("Insertion "+linetype+" finished");
-
-
+        //writeInsertPerformance("insertMulti_time.txt");
+    	writeAccessPerformance("accessMulti_time.txt");
     }
 }
 
