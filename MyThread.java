@@ -4,32 +4,28 @@ public class MyThread<K,V> implements Runnable {
     String name;
     Thread t;
     ExtHash eh;
-    List<String> title;
-    List<String> author;
+    List<String> keys;
+    List<String> values;
     String operation;
-    K key;
     List<Long> times = new ArrayList<>();
 
     public MyThread(){};
 
-    public MyThread(String name, ExtHash eh,  List<String> title,List<String> author ,String operation) {
+    public MyThread(String name, ExtHash eh,  List<String> keys, List<String> values, String operation) {
         this.name = name;
         this.eh = eh;
-        this.title = title;
-        this.author = author;
+        this.keys = keys;
+        this.values = values;
         this.operation = operation;
     }
 
     public void run() {
         if (operation == "Insert") {
-            for (int i = 0; i < title.size(); i++) {
-                long start = System.currentTimeMillis();
-                eh.put(title.get(i), author.get(i));
-                long finish = System.currentTimeMillis();
-                times.add(finish - start);
-            }
+            for (int i = 0; i < keys.size(); i++)
+                eh.put(keys.get(i), values.get(i));
         } else if (operation == "Search") {
-            eh.getValue(key);
+        	for(int i=0; i<keys.size(); i++)
+        		eh.getValue(keys.get(i));
         }
     }
 
@@ -38,4 +34,3 @@ public class MyThread<K,V> implements Runnable {
     }
 
 }
-
